@@ -1,0 +1,249 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: #111111;
+        border: 1px solid #FF3B00;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #FF3B00;
+        margin-bottom: 10px;
+    }
+    
+    .stat-label {
+        color: #FFFFFF;
+        font-size: 0.9em;
+        opacity: 0.8;
+    }
+    
+    .charts-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+    }
+    
+    .chart-card {
+        background: #111111;
+        border: 1px solid #FF3B00;
+        border-radius: 12px;
+        padding: 20px;
+    }
+    
+    .chart-title {
+        color: #FF3B00;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        font-weight: bold;
+    }
+    
+    .chart-canvas {
+        height: 300px;
+        background: #0D0D0D;
+        border-radius: 8px;
+        padding: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_users }}</div>
+            <div class="stat-label">Всего юзеров</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ active_users_today }}</div>
+            <div class="stat-label">Активных сегодня</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ total_payments|floatformat:2 }}</div>
+            <div class="stat-label">Всего оплат (PUREX)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ payments_today|floatformat:2 }}</div>
+            <div class="stat-label">Оплат сегодня</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ total_battles }}</div>
+            <div class="stat-label">Всего битв</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ peak_active }}</div>
+            <div class="stat-label">Пик активности (7 дней)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ avg_active }}</div>
+            <div class="stat-label">Средняя активность</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-number">{{ new_users_7days }}</div>
+            <div class="stat-label">Новых юзеров (7 дней)</div>
+        </div>
+    </div>
+    
+    <div class="charts-container">
+        <div class="chart-card">
+            <div class="chart-title">📈 Новые юзеры (30 дней)</div>
+            <div class="chart-canvas">
+                <canvas id="usersChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <div class="chart-title">💰 Оплаты (30 дней)</div>
+            <div class="chart-canvas">
+                <canvas id="paymentsChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <div class="chart-title">👥 Активность юзеров (30 дней)</div>
+            <div class="chart-canvas">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Данные для графиков
+    const usersChart = {{ users_chart|safe }};
+    const activityChart = {{ activity_chart|safe }};
+    const paymentsChart = {{ payments_chart|safe }};
+    
+    // График новых юзеров
+    const usersCtx = document.getElementById('usersChart').getContext('2d');
+    new Chart(usersCtx, {
+        type: 'line',
+        data: {
+            labels: usersChart.map(item => item.date),
+            datasets: [{
+                label: 'Новые юзеры',
+                data: usersChart.map(item => item.count),
+                borderColor: '#FF3B00',
+                backgroundColor: 'rgba(255, 59, 0, 0.1)',
+                tension: 0.4
+            }]
+        },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#FFFFFF' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#FFFFFF' },
+                            grid: { color: '#333333' }
+                        },
+                        x: {
+                            ticks: { color: '#FFFFFF' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+    
+    // График оплат
+    const paymentsCtx = document.getElementById('paymentsChart').getContext('2d');
+    new Chart(paymentsCtx, {
+        type: 'bar',
+        data: {
+            labels: paymentsChart.map(item => item.date),
+            datasets: [{
+                label: 'Оплаты (PUREX)',
+                data: paymentsChart.map(item => item.amount),
+                backgroundColor: '#FF3B00',
+                borderColor: '#CC2F00',
+                borderWidth: 1
+            }]
+        },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#FFFFFF' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#FFFFFF' },
+                            grid: { color: '#333333' }
+                        },
+                        x: {
+                            ticks: { color: '#FFFFFF' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+    
+    // График активности
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: activityChart.map(item => item.date),
+            datasets: [{
+                label: 'Активные юзеры',
+                data: activityChart.map(item => item.count),
+                borderColor: '#FF3B00',
+                backgroundColor: 'rgba(255, 59, 0, 0.1)',
+                tension: 0.4
+            }]
+        },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#FFFFFF' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#FFFFFF' },
+                            grid: { color: '#333333' }
+                        },
+                        x: {
+                            ticks: { color: '#FFFFFF' },
+                            grid: { color: '#333333' }
+                        }
+                    }
+                }
+            });
+});
+</script>
+{% endblock %}

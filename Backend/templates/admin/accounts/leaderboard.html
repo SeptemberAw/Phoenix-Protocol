@@ -1,0 +1,99 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Leaderboard — {{ period_label }}{% endblock %}
+{% block content_title %}<h1>🏆 Leaderboard — {{ period_label }}</h1>{% endblock %}
+
+{% block content %}
+<style>
+  .lb-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .lb-tabs a {
+    padding: 8px 20px; border-radius: 8px; text-decoration: none;
+    font-weight: bold; font-size: 13px; color: #666; background: #f0f0f0;
+    border: 1px solid #ddd; transition: all 0.2s;
+  }
+  .lb-tabs a.active { background: #417690; color: #fff; border-color: #417690; }
+  .lb-tabs a:hover { background: #e0e0e0; }
+  .lb-tabs a.active:hover { background: #356177; }
+  .lb-table { width: 100%; border-collapse: collapse; }
+  .lb-table th { background: #417690; color: #fff; padding: 10px 14px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lb-table td { padding: 10px 14px; border-bottom: 1px solid #eee; font-size: 13px; }
+  .lb-table tr:hover { background: #f5f9fc; }
+  .lb-table tr.bot-row { background: #fff8f0; }
+  .lb-table tr.bot-row:hover { background: #fff0e0; }
+  .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; font-weight: bold; font-size: 12px; }
+  .rank-1 { background: #FFD700; color: #333; }
+  .rank-2 { background: #C0C0C0; color: #333; }
+  .rank-3 { background: #CD7F32; color: #fff; }
+  .rank-default { background: #f0f0f0; color: #666; }
+  .bot-badge { display: inline-block; background: #ff9800; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold; }
+  .stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
+  .stat-card { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 20px; flex: 1; }
+  .stat-card .label { font-size: 10px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 24px; font-weight: bold; color: #333; margin-top: 4px; }
+</style>
+
+<div class="lb-tabs">
+  <a href="?period=week" class="{% if period == 'week' %}active{% endif %}">📅 Weekly</a>
+  <a href="?period=month" class="{% if period == 'month' %}active{% endif %}">📆 Monthly</a>
+  <a href="?period=all" class="{% if period == 'all' %}active{% endif %}">🌍 All Time</a>
+  <a href="?period=week&include_bots=1" class="{% if include_bots %}active{% endif %}">🤖 With Bots</a>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="label">Total Players</div>
+    <div class="value">{{ total_players }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total Bots</div>
+    <div class="value">{{ total_bots }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Showing</div>
+    <div class="value">{{ entries|length }}</div>
+  </div>
+</div>
+
+<table class="lb-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Player</th>
+      <th>Telegram ID</th>
+      <th>{{ balance_label }}</th>
+      <th>Lifetime Balance</th>
+      <th>Generation</th>
+      <th>Referrals</th>
+      <th>Network</th>
+      <th>Joined</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in entries %}
+    <tr class="{% if e.is_bot %}bot-row{% endif %}">
+      <td>
+        <span class="rank-badge {% if e.rank == 1 %}rank-1{% elif e.rank == 2 %}rank-2{% elif e.rank == 3 %}rank-3{% else %}rank-default{% endif %}">
+          {{ e.rank }}
+        </span>
+      </td>
+      <td>
+        <a href="{% url 'admin:accounts_userprofile_change' e.pk %}">
+          <strong>{{ e.username }}</strong>
+        </a>
+        {% if e.is_bot %}<span class="bot-badge">BOT</span>{% endif %}
+      </td>
+      <td>{{ e.telegram_id }}</td>
+      <td><strong>{{ e.balance }}</strong></td>
+      <td>{{ e.lifetime_balance }}</td>
+      <td>{{ e.generation }}</td>
+      <td>{{ e.referral_count }}</td>
+      <td>{{ e.network_tier }}</td>
+      <td>{{ e.created_at|date:"M d, Y" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">No players found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
